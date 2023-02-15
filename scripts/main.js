@@ -24,7 +24,7 @@ if (navigator.geolocation) {
         AppelAPI(long, lat);
 
     }, () => {
-        alert(`Vous avez refusé la géolocalisation, l'application ne peur pas fonctionner, veuillez l'activer.!`)
+        alert(`Vous avez refusé la géolocalisation, l'application ne peut pas fonctionner, veuillez l'activer !`)
     })
 }
 
@@ -42,6 +42,7 @@ function AppelAPI(long, lat) {
             temps.innerText = resultsAPI.current.weather[0].description;
             temperature.innerText = `${Math.trunc(resultsAPI.current.temp)}°`
             localisation.innerText = resultsAPI.timezone;
+
 
 
             // les heures, par tranche de trois, avec leur temperature.
