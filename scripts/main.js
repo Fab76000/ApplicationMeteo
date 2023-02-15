@@ -24,7 +24,11 @@ if (navigator.geolocation) {
         AppelAPI(long, lat);
 
     }, () => {
+<<<<<<< HEAD
         alert(`Vous avez refusé la géolocalisation, l'application ne peut pas fonctionner, veuillez l'activer !`)
+=======
+        alert(`Vous avez refusé la géolocalisation, l'application ne peut pas fonctionner, veuillez l'activer.!`)
+>>>>>>> 31c6b1bf359cc21c71338abfa2bd877d6f899ebc
     })
 }
 
