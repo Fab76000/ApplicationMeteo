@@ -1,98 +1,134 @@
-//Axes d'amélioration : Afficher image de la météo
-// Récupérer dans la barre de recherche les coordonnées de la ville en tapant le nom de la ville (apparement plus possible avec nouveau openweathermap api)
-
-
 
 const apiKey = 'e15b4537e895c8d5969c66a1b778a5d3';
-const apiUrl = 'https://api.openweathermap.org/data/3.0/onecall?exclude=minutely,alerts&units=metric&appid=' + apiKey;
-const searchBox = document.querySelector(".search input");
-const searchBtn = document.querySelector(".search button");
-const weatherIcon = document.querySelector(".weather-icon");
-const cityName = document.querySelector(".city");
-const tempElement = document.querySelector(".temp");
-const humidityElement = document.querySelector(".humidity");
-const windElement = document.querySelector(".wind");
-let lat = "";
-let lon = "";
+const cityInput = document.getElementById('cityInput');
+const cityName = document.querySelector('.city');
+const tempElement = document.querySelector('.temp');
+const humidityElement = document.querySelector('.humidity');
+const windElement = document.querySelector('.wind');
+const weatherIcon = document.querySelector('.weather-icon');
 
-//var geocodingUrl = `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`;
+// Fonction : récupérer les coordonnées d'une ville
+async function getCityCoordinates(city) {
+    const geocodingUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${apiKey}`;
 
+    try {
+        const response = await fetch(geocodingUrl);
+        const data = await response.json();
 
-
-async function checkWeather(lat, lon) {
-    const response = await fetch(apiUrl + `&lat=${lat}&lon=${lon}`);
-    if (response.status === 404) {
-        document.querySelector(".error").style.display = "block";
-        document.querySelector(".weather").style.display = "none";
-    } else {
-        let data = await response.json();
-        cityName.innerHTML = data.current.name;
-        tempElement.innerHTML = Math.round(data.current.temp) + '°C';
-        humidityElement.innerHTML = Math.round(data.current.humidity) + '%';
-
-        if (data.current && data.current.wind_speed) {
-            windElement.innerHTML = Math.round(data.current.wind_speed) + 'km/h';
+        if (data.length > 0) {
+            const { lat, lon, name, country } = data[0];
+            checkWeather(lat, lon, `${name}, ${country}`);
         } else {
-            windElement.innerHTML = 'N/A';
+            showError("Ville non trouvée.");
         }
+    } catch (error) {
+        showError("Erreur lors de la récupération des coordonnées.");
+        console.error(error);
+    }
+}
 
-        const weatherIcon = document.querySelector(".weather-icon");
-        if (data && data.weather && data.weather.length > 0) {
-            if (data.weather[0].main === "Clouds") {
-                weatherIcon.src = "images/clouds.png";
-            } else if (data.weather[0].main === 'Clear') {
-                weatherIcon.src = "images/clear.png";
-            } else if (data.weather[0].main === 'Rain') {
-                weatherIcon.src = "images/rain.png";
-            } else if (data.weather[0].main === 'Drizzle') {
-                weatherIcon.src = "images/drizzle.png";
-            } else if (data.weather[0].main === 'Mist') {
-                weatherIcon.src = "images/mist.png";
-            }
+// Fonction : afficher la météo avec les coordonnées
+async function checkWeather(lat, lon, cityName) {
+    try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-            document.querySelector(".weather").style.display = "block";
-            document.querySelector(".error").style.display = "none";
-        }
+        // Mettre à jour les données météo
+        document.querySelector(".city").textContent = cityName;
+        document.querySelector(".temp").textContent = `${Math.round(data.main.temp)}°C`;
+        document.querySelector(".humidity").textContent = `${data.main.humidity}%`;
+        document.querySelector(".wind-speed").textContent = `${data.wind.speed}`;
+
+        const iconCode = data.weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+        document.querySelector(".weather-icon").src = iconUrl;
+
+        // Afficher les sections météo
+        document.querySelector(".weather").style.display = "block";
+        document.querySelector(".details").style.display = "flex";
+
+    } catch (error) {
+        console.error("Erreur lors de la récupération des données météo", error);
+        alert("Impossible de récupérer la météo.");
     }
 }
 
 
-// Call the function with the desired latitude and longitude values
 
-searchBtn.addEventListener("click", async () => {
-    const coordinates = searchBox.value.split(",");
-    if (coordinates.length === 2) {
-        lat = parseFloat(coordinates[0].trim());
-        lon = parseFloat(coordinates[1].trim());
-        const geocodingUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`;
+function showError(message) {
+    alert(message);
+    document.querySelector(".weather").style.display = "none";
+    const errorBlock = document.querySelector(".error");
+    if (errorBlock) errorBlock.style.display = "block";
+}
 
-        try {
-            const response = await fetch(geocodingUrl);
-            const data = await response.json();
-            if (data && data.length > 0) {
-                const city = data[0].name;
-                console.log('City:', city);
-                console.log(data)
-                cityName.innerHTML = city; // Set the city name in the HTML
-
-                const weatherData = await fetch(apiUrl + `&lat=${lat}&lon=${lon}`);
-                const weather = await weatherData.json();
-                console.log(weather)
-                tempElement.innerHTML = Math.round(weather.current.temp) + '°C';
-                humidityElement.innerHTML = Math.round(weather.current.humidity) + '%'
-                windElement.innerHTML = Math.round(weather.current.wind_speed) + 'km/h';
-
-                console.log('API Response:', data);
-
-            } else {
-                console.error('Invalid response:', data);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
+function searchCity() {
+    const city = cityInput.value.trim();
+    if (city !== "") {
+        getCityCoordinates(city);
+        cityInput.value = "";
+        suggestionBox.innerHTML = "";
     } else {
-        // Handle invalid input or show an error message
-        console.log("Invalid input. Please enter latitude and longitude in the format: LATITUDE, LONGITUDE");
+        alert("Veuillez entrer une ville.");
+    }
+}
+
+document.getElementById('searchBtn').addEventListener('click', searchCity);
+
+const suggestionBox = document.createElement("ul");
+suggestionBox.classList.add("suggestions");
+document.querySelector(".search").appendChild(suggestionBox);
+
+cityInput.addEventListener("input", async () => {
+    const input = cityInput.value.trim();
+    if (input.length === 0) {
+        suggestionBox.innerHTML = "";
+        return;
+    }
+
+    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input)}&limit=10&appid=${apiKey}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const seen = new Set();
+        const uniqueResults = data.filter(item => {
+            const key = `${item.name},${item.state || ""},${item.country}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        suggestionBox.innerHTML = "";
+        uniqueResults.forEach(place => {
+            const fullCityName = `${place.name}${place.state ? ', ' + place.state : ''}, ${place.country}`;
+            const item = document.createElement("li");
+            item.textContent = fullCityName;
+            item.addEventListener("click", () => {
+                const fullCityName = `${place.name}${place.state ? ', ' + place.state : ''}, ${place.country}`;
+                checkWeather(place.lat, place.lon, fullCityName); // Utiliser coordonnées précises
+                suggestionBox.innerHTML = "";
+            });
+            suggestionBox.appendChild(item);
+        });
+    } catch (error) {
+        console.error("Erreur dans la récupération des suggestions", error);
     }
 });
 
+document.addEventListener("click", (e) => {
+    if (!document.querySelector(".search").contains(e.target)) {
+        suggestionBox.innerHTML = "";
+    }
+
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+    cityInput.value = "";
+    suggestionBox.innerHTML = "";
+    document.querySelector(".weather").style.display = "none";
+    const errorBlock = document.querySelector(".error");
+    if (errorBlock) errorBlock.style.display = "none";
+})
